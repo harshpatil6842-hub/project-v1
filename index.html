@@ -761,7 +761,7 @@ function renderResult(score, text) {
     tag.className = 'verdict-tag human';
     tag.textContent = 'Human Written';
     title.textContent = 'High Trust Content';
-    sub.textContent = `Strong signals of authentic human authorship. Low probability of AI generation (${score.aiProb}%).`;
+    sub.textContent = `Strong signals of authentic human authorship. Low probability of AI generation (${score.ai_probability}%).`;
   } else if (score.trust >= 40) {
     tag.className = 'verdict-tag mixed';
     tag.textContent = 'Mixed Signals';
@@ -771,7 +771,7 @@ function renderResult(score, text) {
     tag.className = 'verdict-tag ai';
     tag.textContent = 'AI Generated';
     title.textContent = 'Low Trust Score';
-    sub.textContent = `Strong indicators of machine generation detected. AI probability: ${score.aiProb}%.`;
+    sub.textContent = `Strong indicators of machine generation detected. AI probability: ${score.ai_probability}%.`;
   }
 
   // Signals
@@ -801,13 +801,13 @@ function reset() {
 
 function copyResult() {
   if (!lastScore) return;
-  const text = `LUMORA Trust Score: ${lastScore.trust}/100\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\nAI Probability: ${lastScore.aiProb}%\n\nAnalyzed by LUMORA — lumora.ai`;
+  const text = `LUMORA Trust Score: ${lastScore.trust}/100\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\nAI Probability: ${lastscore.ai_probability}%\n\nAnalyzed by LUMORA — lumora.ai`;
   navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard.'));
 }
 
 function downloadResult() {
   if (!lastScore) return;
-  const content = `LUMORA VERIFICATION REPORT\n${'='.repeat(40)}\n\nTrust Score: ${lastScore.trust}/100\nAI Probability: ${lastScore.aiProb}%\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\n\nSignal Breakdown:\n${lastScore.signals.map(s => `- ${s.title}: ${s.desc}`).join('\n')}\n\nAnalyzed Text (first 300 chars):\n${lastText.substring(0,300)}...\n\n${'='.repeat(40)}\nVerified by LUMORA — Trust Layer for AI Content\nlumora.ai`;
+  const content = `LUMORA VERIFICATION REPORT\n${'='.repeat(40)}\n\nTrust Score: ${lastScore.trust}/100\nAI Probability: ${lastscore.ai_probability}%\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\n\nSignal Breakdown:\n${lastScore.signals.map(s => `- ${s.title}: ${s.desc}`).join('\n')}\n\nAnalyzed Text (first 300 chars):\n${lastText.substring(0,300)}...\n\n${'='.repeat(40)}\nVerified by LUMORA — Trust Layer for AI Content\nlumora.ai`;
   const blob = new Blob([content], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
