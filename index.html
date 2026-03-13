@@ -602,7 +602,7 @@ async function analyze() {
   analyzeBtn.disabled = true;
 
   // Simulate API delay (replace with real backend call later)
-const response = await fetch('http://127.0.0.1:5000/analyze', {
+const response = await fetch('https://web-production-7e70d.up.railway.app/analyze', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({ text: text })
