@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 HF_API_KEY = os.environ.get("HF_API_KEY", "")
-HF_MODEL_URL = "https://api-inference.huggingface.co/models/roberta-base-openai-detector"
+HF_MODEL_URL = "https://api-inference.huggingface.co/models/Hello-SimpleAI/chatgpt-detector-roberta"
 
 def detect_with_hf(text):
     try:
