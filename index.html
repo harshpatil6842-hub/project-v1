@@ -1,9 +1,826 @@
 <!DOCTYPE html>
-<html></html>
+<html lang="en">
 <head>
-    <title>My App</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>LUMORA — AI Content Verification</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --black: #060608;
+    --deep: #0a0a10;
+    --panel: #0f0f1a;
+    --border: #1a1a2e;
+    --blue: #0ff;
+    --blue-dim: rgba(0,255,255,0.08);
+    --blue-mid: rgba(0,255,255,0.18);
+    --text: #e8e8f0;
+    --muted: #5a5a78;
+    --green: #00ff9d;
+    --red: #ff3c5f;
+    --yellow: #ffe14d;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.4;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow blob */
+  body::after {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(0,255,255,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrap {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+  }
+
+  /* ── NAV ── */
+  nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 28px 0 48px;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 22px;
+    letter-spacing: 0.12em;
+    color: var(--blue);
+    text-shadow: 0 0 24px rgba(0,255,255,0.5);
+  }
+
+  .logo span { color: var(--text); }
+
+  .tag {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    padding: 4px 10px;
+    text-transform: uppercase;
+  }
+
+  /* ── HERO ── */
+  .hero {
+    margin-bottom: 56px;
+  }
+
+  .hero h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 56px);
+    font-weight: 800;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin-bottom: 16px;
+  }
+
+  .hero h1 em {
+    font-style: normal;
+    color: var(--blue);
+    text-shadow: 0 0 32px rgba(0,255,255,0.4);
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1.7;
+    max-width: 480px;
+  }
+
+  /* ── INPUT PANEL ── */
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 32px;
+    margin-bottom: 32px;
+    position: relative;
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    opacity: 0.6;
+  }
+
+  .panel-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  textarea {
+    width: 100%;
+    min-height: 200px;
+    background: var(--deep);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    padding: 16px;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  textarea::placeholder { color: var(--muted); }
+
+  textarea:focus {
+    border-color: rgba(0,255,255,0.3);
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+  }
+
+  #charCount {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .btn {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    padding: 12px 32px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: var(--blue);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.25s ease;
+    z-index: 0;
+  }
+
+  .btn:hover::before { transform: scaleX(1); }
+  .btn:hover { color: var(--black); }
+
+  .btn span { position: relative; z-index: 1; }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn:disabled::before { transform: scaleX(0) !important; }
+  .btn:disabled { color: var(--blue) !important; }
+
+  /* ── RESULT ── */
+  #result {
+    display: none;
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    padding: 36px 32px;
+    position: relative;
+  }
+
+  .result-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--blue), transparent);
+    opacity: 0.6;
+  }
+
+  /* Score ring */
+  .score-section {
+    display: flex;
+    align-items: center;
+    gap: 36px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+  }
+
+  .ring-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+  }
+
+  .ring-wrap svg {
+    transform: rotate(-90deg);
+  }
+
+  .ring-bg {
+    fill: none;
+    stroke: var(--border);
+    stroke-width: 8;
+  }
+
+  .ring-fg {
+    fill: none;
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 345;
+    stroke-dashoffset: 345;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.16,1,0.3,1),
+                stroke 0.4s;
+  }
+
+  .ring-center {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ring-score {
+    font-family: 'Syne', sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .ring-label {
+    font-size: 9px;
+    letter-spacing: 0.16em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-top: 4px;
+  }
+
+  .verdict-block {
+    flex: 1;
+    min-width: 200px;
+  }
+
+  .verdict-tag {
+    display: inline-block;
+    font-family: 'Syne', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    margin-bottom: 12px;
+    border: 1px solid;
+  }
+
+  .verdict-tag.ai   { border-color: var(--red); color: var(--red); }
+  .verdict-tag.human { border-color: var(--green); color: var(--green); }
+  .verdict-tag.mixed { border-color: var(--yellow); color: var(--yellow); }
+
+  .verdict-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    line-height: 1.1;
+  }
+
+  .verdict-sub {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Breakdown */
+  .breakdown-label {
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .signal-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .signal-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    font-size: 12px;
+    line-height: 1.5;
+    padding: 12px 14px;
+    background: var(--deep);
+    border-left: 2px solid var(--border);
+    transition: border-color 0.2s;
+  }
+
+  .signal-item.positive { border-left-color: var(--red); }
+  .signal-item.negative { border-left-color: var(--green); }
+
+  .signal-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  .signal-text strong {
+    display: block;
+    color: var(--text);
+    margin-bottom: 2px;
+    font-weight: 500;
+  }
+
+  .signal-text span { color: var(--muted); }
+
+  /* Actions */
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 28px;
+    flex-wrap: wrap;
+  }
+
+  .btn-ghost {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-ghost:hover {
+    border-color: var(--blue);
+    color: var(--blue);
+  }
+
+  /* Loading */
+  #loader {
+    display: none;
+    align-items: center;
+    gap: 14px;
+    padding: 24px;
+    color: var(--muted);
+    font-size: 12px;
+    letter-spacing: 0.08em;
+  }
+
+  .dots {
+    display: flex;
+    gap: 5px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--blue);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  .dot:nth-child(2) { animation-delay: 0.2s; }
+  .dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.2; transform: scale(0.8); }
+    50%       { opacity: 1; transform: scale(1); }
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  footer span {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+
+  footer a {
+    color: var(--blue);
+    text-decoration: none;
+    font-size: 11px;
+  }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 28px 0;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    background: var(--panel);
+    border: 1px solid var(--blue);
+    color: var(--blue);
+    font-size: 12px;
+    letter-spacing: 0.06em;
+    padding: 12px 20px;
+    z-index: 100;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.3s;
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+</style>
 </head>
 <body>
-    <h1>Coming soon</h1>
+<div class="wrap">
+
+  <nav>
+    <div class="logo">LUM<span>ORA</span></div>
+    <div class="tag">Beta v0.1</div>
+  </nav>
+
+  <div class="hero">
+    <h1>The <em>Trust Layer</em><br>for AI Content.</h1>
+    <p>Paste any text. LUMORA analyzes it and returns a Trust Score — telling you exactly how much of it was written by a machine.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-label">// Input Text</div>
+    <textarea id="textInput" placeholder="Paste text here to verify — article, email, essay, message..."></textarea>
+    <div class="meta-row">
+      <span id="charCount">0 characters</span>
+      <button class="btn" id="analyzeBtn" onclick="analyze()" disabled>
+        <span>Analyze →</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="loader">
+    <div class="dots">
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+    Scanning signals...
+  </div>
+
+  <div id="result">
+    <div class="result-panel">
+      <div class="panel-label">// Trust Score</div>
+
+      <div class="score-section">
+        <div class="ring-wrap">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle class="ring-bg" cx="65" cy="65" r="55"/>
+            <circle class="ring-fg" id="ringFg" cx="65" cy="65" r="55"/>
+          </svg>
+          <div class="ring-center">
+            <div class="ring-score" id="scoreNum">—</div>
+            <div class="ring-label">Trust</div>
+          </div>
+        </div>
+
+        <div class="verdict-block">
+          <div class="verdict-tag" id="verdictTag">—</div>
+          <div class="verdict-title" id="verdictTitle">—</div>
+          <div class="verdict-sub" id="verdictSub">—</div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="breakdown-label">// Signal Breakdown</div>
+      <ul class="signal-list" id="signalList"></ul>
+
+      <div class="actions">
+        <button class="btn-ghost" onclick="copyResult()">Copy Result</button>
+        <button class="btn-ghost" onclick="downloadResult()">Download Report</button>
+        <button class="btn-ghost" onclick="reset()">Analyze Another</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="wrap" style="padding-top:0; margin-top:0;">
+  <span>LUMORA © 2025 — AI Trust Infrastructure</span>
+  <a href="#">API Access →</a>
+</footer>
+
+<div class="toast" id="toast">Copied to clipboard.</div>
+
+<script>
+// ── State ──
+const textarea = document.getElementById('textInput');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const charCount = document.getElementById('charCount');
+let lastScore = null;
+let lastText = '';
+
+// ── Char counter ──
+textarea.addEventListener('input', () => {
+  const len = textarea.value.length;
+  charCount.textContent = `${len.toLocaleString()} character${len !== 1 ? 's' : ''}`;
+  analyzeBtn.disabled = len < 30;
+});
+
+// ── Main analyze ──
+async function analyze() {
+  const text = textarea.value.trim();
+  if (text.length < 30) return;
+  lastText = text;
+
+  // UI states
+  document.getElementById('result').style.display = 'none';
+  const loader = document.getElementById('loader');
+  loader.style.display = 'flex';
+  analyzeBtn.disabled = true;
+
+  // Simulate API delay (replace with real backend call later)
+const response = await fetch('http://127.0.0.1:5000/analyze', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ text: text })
+});
+const score = await response.json();
+lastScore = score;
+  loader.style.display = 'none';
+  renderResult(score, text);
+}
+
+// ── Heuristic scorer (frontend placeholder — replace with Flask API) ──
+function computeScore(text) {
+  const words = text.split(/\s+/).filter(Boolean);
+  const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 4);
+
+  // Signal 1: avg sentence length (AI tends toward 18-25 words)
+  const avgSentLen = words.length / Math.max(sentences.length, 1);
+  const sentScore = avgSentLen > 14 && avgSentLen < 28 ? 30 : 0;
+
+  // Signal 2: transition word density
+  const transitions = ['furthermore', 'additionally', 'moreover', 'however', 'consequently',
+    'nevertheless', 'therefore', 'in conclusion', 'in summary', 'it is important',
+    'it should be noted', 'as a result', 'on the other hand', 'notably', 'significantly'];
+  const lc = text.toLowerCase();
+  const transCount = transitions.filter(t => lc.includes(t)).length;
+  const transScore = Math.min(transCount * 8, 32);
+
+  // Signal 3: punctuation variety (humans use more em dashes, ellipses, etc.)
+  const humanPunct = (text.match(/[—–…''""\(\)]/g) || []).length;
+  const punctScore = humanPunct < 2 ? 20 : 0;
+
+  // Signal 4: repetition (AI repeats structural patterns)
+  const paraStarters = sentences.map(s => s.trim().split(' ').slice(0,2).join(' ').toLowerCase());
+  const uniqueStarters = new Set(paraStarters).size;
+  const repScore = (uniqueStarters / Math.max(paraStarters.length, 1)) < 0.7 ? 15 : 0;
+
+  // Signal 5: vocabulary richness
+  const uniqueWords = new Set(words.map(w => w.toLowerCase().replace(/[^a-z]/g,'')));
+  const richness = uniqueWords.size / Math.max(words.length, 1);
+  const richScore = richness > 0.55 ? 0 : 10;
+
+  const aiScore = Math.min(sentScore + transScore + punctScore + repScore + richScore, 97);
+  const humanTrust = Math.max(100 - aiScore, 3);
+
+  return {
+    trust: humanTrust,
+    aiProb: aiScore,
+    signals: buildSignals(transCount, avgSentLen, humanPunct, richness, aiScore)
+  };
+}
+
+function buildSignals(transCount, avgSentLen, humanPunct, richness, aiScore) {
+  const signals = [];
+
+  if (transCount >= 2) {
+    signals.push({
+      type: 'positive',
+      icon: '⚡',
+      title: 'High transition word density',
+      desc: `${transCount} AI-typical phrase${transCount > 1 ? 's' : ''} detected (furthermore, moreover, etc.)`
+    });
+  } else {
+    signals.push({
+      type: 'negative',
+      icon: '✓',
+      title: 'Low AI transition phrase usage',
+      desc: 'Writer avoids formulaic connectors — human-typical.'
+    });
+  }
+
+  if (avgSentLen > 14 && avgSentLen < 28) {
+    signals.push({
+      type: 'positive',
+      icon: '⚡',
+      title: 'Uniform sentence length',
+      desc: `~${Math.round(avgSentLen)} words/sentence — consistent with AI generation patterns.`
+    });
+  } else {
+    signals.push({
+      type: 'negative',
+      icon: '✓',
+      title: 'Variable sentence rhythm',
+      desc: `Sentence length varies — more human-like flow detected.`
+    });
+  }
+
+  if (humanPunct < 2) {
+    signals.push({
+      type: 'positive',
+      icon: '⚡',
+      title: 'Minimal punctuation variety',
+      desc: 'Lacks em dashes, ellipses, or informal marks typical of human writing.'
+    });
+  } else {
+    signals.push({
+      type: 'negative',
+      icon: '✓',
+      title: 'Rich punctuation variety',
+      desc: 'Contains stylistic punctuation — em dashes, quotes, informal markers.'
+    });
+  }
+
+  if (richness < 0.55) {
+    signals.push({
+      type: 'positive',
+      icon: '⚡',
+      title: 'Vocabulary repetition detected',
+      desc: `${Math.round(richness * 100)}% unique word ratio — below human average.`
+    });
+  } else {
+    signals.push({
+      type: 'negative',
+      icon: '✓',
+      title: 'Strong vocabulary diversity',
+      desc: `${Math.round(richness * 100)}% unique word ratio — consistent with authentic writing.`
+    });
+  }
+
+  return signals;
+}
+
+// ── Render ──
+function renderResult(score, text) {
+  const el = document.getElementById('result');
+  el.style.display = 'block';
+
+  // Ring
+  const ring = document.getElementById('ringFg');
+  const circumference = 345;
+  const offset = circumference - (score.trust / 100) * circumference;
+
+  let color = score.trust >= 60 ? 'var(--green)' : score.trust >= 35 ? 'var(--yellow)' : 'var(--red)';
+  ring.style.stroke = color;
+
+  setTimeout(() => {
+    ring.style.strokeDashoffset = offset;
+  }, 50);
+
+  // Score number (count up)
+  const scoreEl = document.getElementById('scoreNum');
+  scoreEl.style.color = color;
+  let n = 0;
+  const target = score.trust;
+  const interval = setInterval(() => {
+    n = Math.min(n + 2, target);
+    scoreEl.textContent = n;
+    if (n >= target) clearInterval(interval);
+  }, 20);
+
+  // Verdict
+  const tag = document.getElementById('verdictTag');
+  const title = document.getElementById('verdictTitle');
+  const sub = document.getElementById('verdictSub');
+
+  if (score.trust >= 70) {
+    tag.className = 'verdict-tag human';
+    tag.textContent = 'Human Written';
+    title.textContent = 'High Trust Content';
+    sub.textContent = `Strong signals of authentic human authorship. Low probability of AI generation (${score.aiProb}%).`;
+  } else if (score.trust >= 40) {
+    tag.className = 'verdict-tag mixed';
+    tag.textContent = 'Mixed Signals';
+    title.textContent = 'Uncertain Origin';
+    sub.textContent = `Content shows both AI and human signals. May be AI-assisted or human text edited by AI.`;
+  } else {
+    tag.className = 'verdict-tag ai';
+    tag.textContent = 'AI Generated';
+    title.textContent = 'Low Trust Score';
+    sub.textContent = `Strong indicators of machine generation detected. AI probability: ${score.aiProb}%.`;
+  }
+
+  // Signals
+  const list = document.getElementById('signalList');
+  list.innerHTML = score.signals.map(s => `
+    <li class="signal-item ${s.type}">
+      <span class="signal-icon">${s.icon}</span>
+      <div class="signal-text">
+        <strong>${s.title}</strong>
+        <span>${s.desc}</span>
+      </div>
+    </li>
+  `).join('');
+
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// ── Actions ──
+function reset() {
+  document.getElementById('result').style.display = 'none';
+  textarea.value = '';
+  charCount.textContent = '0 characters';
+  analyzeBtn.disabled = true;
+  textarea.focus();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function copyResult() {
+  if (!lastScore) return;
+  const text = `LUMORA Trust Score: ${lastScore.trust}/100\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\nAI Probability: ${lastScore.aiProb}%\n\nAnalyzed by LUMORA — lumora.ai`;
+  navigator.clipboard.writeText(text).then(() => showToast('Copied to clipboard.'));
+}
+
+function downloadResult() {
+  if (!lastScore) return;
+  const content = `LUMORA VERIFICATION REPORT\n${'='.repeat(40)}\n\nTrust Score: ${lastScore.trust}/100\nAI Probability: ${lastScore.aiProb}%\nVerdict: ${lastScore.trust >= 70 ? 'Human Written' : lastScore.trust >= 40 ? 'Mixed Signals' : 'AI Generated'}\n\nSignal Breakdown:\n${lastScore.signals.map(s => `- ${s.title}: ${s.desc}`).join('\n')}\n\nAnalyzed Text (first 300 chars):\n${lastText.substring(0,300)}...\n\n${'='.repeat(40)}\nVerified by LUMORA — Trust Layer for AI Content\nlumora.ai`;
+  const blob = new Blob([content], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `lumora-report-${Date.now()}.txt`;
+  a.click();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
 </body>
 </html>
